@@ -24,7 +24,7 @@ resource "azurerm_kubernetes_cluster" "example" {
   }
 }
 
-
+# This gets the api key from the nethopper secret to be able to interact with the backend
 data "kubernetes_resource" "nethopper-config" {
   api_version = "v1"
   kind        = "Secret"
@@ -34,8 +34,8 @@ data "kubernetes_resource" "nethopper-config" {
     namespace = "${var.agent_namespace}"
   }
 }
-
-data "http" "create-cluster" {
+# Creates a clutser in NH, attaches it to the network, and generates install instructions
+data "http" "bootstrap-cluster" {
   url = "${base64decode(data.kubernetes_resource.nethopper-config.object.data.API_URL)}"
   method = "POST"
   request_headers = {
@@ -43,53 +43,21 @@ data "http" "create-cluster" {
     content-type = "application/json"
   }
 
-  request_body = "{\"query\":\"mutation CreateCluster($args:CreateClusterInput!){\\ncreateCluster(args:$args){\\nid\\n}\\n}\",\"variables\":{\"args\":{\"name\":\"cloudflow-${var.cluster-name-suffix}\",\"k8sDistro\":\"AKS\",\"systemType\":\"KUBERNETES\",\"clusterRole\":\"EDGE\",\"namespace\":\"default\"}}}"
+  request_body = "{\"query\":\"mutation BootstrapCluster($args:CreateClusterInput!){\\ncreateCluster(args:$args){\\nid\\n}\\n}\",\"variables\":{\"args\":{\"name\":\"cloudflow-${var.cluster-name-suffix}\",\"k8sDistro\":\"AKS\",\"systemType\":\"KUBERNETES\",\"clusterRole\":\"EDGE\",\"namespace\":\"default\"}}}"
 }
 
-data "http" "attach-cluster-to-network" {
-  url = "${base64decode(data.kubernetes_resource.nethopper-config.object.data.API_URL)}"
-  method = "POST"
-  request_headers = {
-    apikey = "${base64decode(data.kubernetes_resource.nethopper-config.object.data.API_KEY)}"
-    content-type = "application/json"
-  }
-
-  request_body = "{\"query\":\"mutation AttachCluster($args:AttachClusterInput!){\\nattachCluster(args:$args){\\ncluster{\\nid\\n}\\n}\\n}\",\"variables\":{\"args\":{\"clusterId\":\"${jsondecode(data.http.create-cluster.response_body).data.createCluster.id}\",\"networkId\":\"${base64decode(data.kubernetes_resource.nethopper-config.object.data.NETWORK_ID)}\"}}}"
-}
-
-data "http" "create-agent" {
-  depends_on = [ data.http.attach-cluster-to-network ]
-
-  url = "${base64decode(data.kubernetes_resource.nethopper-config.object.data.API_URL)}"
-  method = "POST"
-  request_headers = {
-    apikey = "${base64decode(data.kubernetes_resource.nethopper-config.object.data.API_KEY)}"
-    content-type = "application/json"
-  }
-
-  request_body = "{\"query\":\"mutation CreateAgent($args:CreateAgentInput!){\\ncreateAgent(args:$args){\\nid\\n}\\n}\",\"variables\":{\"args\":{\"clusterId\":\"${jsondecode(data.http.create-cluster.response_body).data.createCluster.id}\",\"networkId\":\"${base64decode(data.kubernetes_resource.nethopper-config.object.data.NETWORK_ID)}\"}}}"
-}
-
-data "http" "create-install-object" {
-  url = "${base64decode(data.kubernetes_resource.nethopper-config.object.data.API_URL)}"
-  method = "POST"
-  request_headers = {
-    apikey = "${base64decode(data.kubernetes_resource.nethopper-config.object.data.API_KEY)}"
-    content-type = "application/json"
-  }
-
-  request_body = "{\"query\":\"mutation CreateInstallObject($args:CreateAgentInstallObjectInput!){\\ncreateInstallObject(args:$args)\\n}\",\"variables\":{\"args\":{\"agentId\":\"${jsondecode(data.http.create-agent.response_body).data.createAgent.id}\"}}}"
-}
-
+# This goes and gets the generated install instructions via curl
 data "curl" "get-nethopper-agent-manifest" {
   http_method = "GET"
   uri = "${replace(base64decode(data.kubernetes_resource.nethopper-config.object.data.API_URL), "graphql", "install")}/${jsondecode(data.http.create-install-object.response_body).data.createInstallObject}"
 }
 
+# This saves install instructions to a a docs object to keep in memory
 data "kubectl_file_documents" "docs" {
     content = data.curl.get-nethopper-agent-manifest.response
 }
 
+# Looping through each resource in the manifest and applying
 resource "kubectl_manifest" "nethopper-agent" {
   for_each  = data.kubectl_file_documents.docs.manifests
   yaml_body = each.value

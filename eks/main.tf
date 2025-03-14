@@ -18,7 +18,7 @@ provider "kubernetes" {
 terraform {
   backend "kubernetes" {
     secret_suffix     = "providerconfig-default"
-    namespace         = "kaops"
+    namespace         = "default"
     in_cluster_config = true
   }
 }
@@ -39,12 +39,12 @@ data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_name
 }
 
-# Fetch NVIDIA device plugin YAML from GitHub
-data "http" "nvidia_device_plugin" {
-  url = "https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.12/nvidia-device-plugin.yml"
-}
+# # Fetch NVIDIA device plugin YAML from GitHub
+# data "http" "nvidia_device_plugin" {
+#   url = "https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.12/nvidia-device-plugin.yml"
+# }
 
-# Apply NVIDIA plugin as a Kubernetes manifest
-resource "kubernetes_manifest" "nvidia_device_plugin" {
-  manifest = yamldecode(data.http.nvidia_device_plugin.body)
-}
+# # Apply NVIDIA plugin as a Kubernetes manifest
+# resource "kubernetes_manifest" "nvidia_device_plugin" {
+#   manifest = yamldecode(data.http.nvidia_device_plugin.body)
+# }

@@ -1,0 +1,15 @@
+apiVersion: tf.crossplane.io/v1alpha1
+kind: Workspace
+metadata:
+  name: private-ai-eks
+spec:
+  forProvider:
+    source: Remote
+    # module: git::https://github.com/nethopper2/cloudflow.git//iac/tf/aws/vpc-aws
+    # module: git::https://github.com/nethopper2/kaops.git//demo/iac/aws-vpc
+    module: git::https://github.com/nethopper2/cluster-bootstrapping.git//eks
+  writeConnectionSecretToRef:
+    namespace: default
+    name: default
+  providerConfigRef:
+    name: awsconf

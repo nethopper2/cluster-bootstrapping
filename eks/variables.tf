@@ -15,3 +15,9 @@ variable "k8s-version" {
   type        = string
   default     = "1.31"
 }
+
+variable "cidr-block" {
+  description = "CIDR Block"
+  type = list
+  default = ["10.0.0.0/8"]
+}

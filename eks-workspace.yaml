@@ -10,6 +10,6 @@ spec:
     module: git::https://github.com/nethopper2/cluster-bootstrapping.git//eks
   writeConnectionSecretToRef:
     namespace: default
-    name: default
+    name: private-ai-eks-connection-ref
   providerConfigRef:
     name: awsconfig

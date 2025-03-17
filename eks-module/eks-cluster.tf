@@ -8,11 +8,6 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
-  cluster_compute_config = {
-    enabled    = true
-    node_pools = ["general-purpose", "gpu"]
-  }
-
   cluster_endpoint_public_access = true
   enable_cluster_creator_admin_permissions = true
 
@@ -26,6 +21,10 @@ module "eks" {
     create_security_group = false
   }
 
+  node_security_group_tags = {
+    "kubernetes.io/cluster/${local.cluster_name}" = null
+  }
+
   eks_managed_node_groups = {
     gpu_nodes = {
       name = "gpu-node-group"
@@ -35,7 +34,7 @@ module "eks" {
       max_size     = 1
       desired_size = 1
 
-      vpc_security_group_ids = [aws_security_group.eks_nodes.id]
+      vpc_security_group_ids = [aws_security_group.node_group_one.id]
 
       subnet_ids = [
         module.vpc.private_subnets[0],

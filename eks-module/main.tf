@@ -5,13 +5,20 @@
 # You should **not** schedule deployments and services in this workspace. This keeps workspaces modular (one for provision EKS, another for scheduling Kubernetes resources) as per best practices.
 provider "aws" {
   region = var.region
-  shared_credentials_file = "aws-creds.ini"
+  # shared_credentials_file = "aws-creds.ini"
 }
 
 provider "kubernetes" {
   host                   = module.eks.cluster_endpoint
   token                  = data.aws_eks_cluster_auth.cluster.token
   cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+}
+
+provider "kubectl" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+  load_config_file       = false
 }
     
 #Modules _must_ use remote state. The provider does not persist state.
@@ -20,6 +27,12 @@ terraform {
     secret_suffix     = "providerconfig-default"
     namespace         = "default"
     in_cluster_config = true
+  }
+}
+
+terraform {
+  backend "local" {
+    path = "./tf-state"
   }
 }
 
@@ -37,6 +50,54 @@ resource "random_string" "suffix" {
 
 data "aws_eks_cluster_auth" "cluster" {
   name = module.eks.cluster_name
+}
+
+resource "kubectl_manifest" "test" {
+    yaml_body = <<YAML
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin-daemonset
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: nvidia-device-plugin-ds
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: nvidia-device-plugin-ds
+    spec:
+      tolerations:
+      - key: "sku"
+        operator: "Equal"
+        value: "gpu"
+        effect: "NoSchedule"
+      # Mark this pod as a critical add-on; when enabled, the critical add-on
+      # scheduler reserves resources for critical add-on pods so that they can
+      # be rescheduled after a failure.
+      # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
+      priorityClassName: "system-node-critical"
+      containers:
+      - image: nvcr.io/nvidia/k8s-device-plugin:v0.15.0
+        name: nvidia-device-plugin-ctr
+        env:
+          - name: FAIL_ON_INIT_ERROR
+            value: "false"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - name: device-plugin
+          mountPath: /var/lib/kubelet/device-plugins
+      volumes:
+      - name: device-plugin
+        hostPath:
+          path: /var/lib/kubelet/device-plugins
+YAML
 }
 
 # # Fetch NVIDIA device plugin YAML from GitHub

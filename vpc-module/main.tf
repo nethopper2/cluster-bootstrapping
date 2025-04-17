@@ -15,6 +15,6 @@ resource "aws_vpc" "main" {
  cidr_block = "10.0.0.0/16"
  
  tags = {
-   Name = "TF VPC for MIKE"
+   Name = "TF VPC for MIKE Edit One"
  }
 }

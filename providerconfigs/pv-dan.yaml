@@ -5,8 +5,8 @@ metadata:
 spec:
   credentials:
     filename: aws-creds-dan.ini
-    - secretRef:
-        key: creds
-        name: aws-creds-dan
-        namespace: default
-      source: Secret
+  - secretRef:
+      key: creds
+      name: aws-creds-dan
+      namespace: default
+    source: Secret

@@ -1,5 +1,5 @@
 provider "aws" {
-  shared_credentials_files = ["aws-creds.ini"]
+  shared_credentials_files = ["aws-creds-mike.ini"]
   region = "us-east-1"
 }
 

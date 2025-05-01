@@ -5,11 +5,9 @@ metadata:
 spec:
   forProvider:
     source: Remote
-    # module: git::https://github.com/nethopper2/cloudflow.git//iac/tf/aws/vpc-aws
-    # module: git::https://github.com/nethopper2/kaops.git//demo/iac/aws-vpc
     module: git::https://github.com/nethopper2/cluster-bootstrapping.git//vpc-module
   writeConnectionSecretToRef:
     namespace: default
     name: mike-vpc
   providerConfigRef:
-    name: aws-config-mike
+    name: awsconfig-mike

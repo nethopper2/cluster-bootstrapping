@@ -1,7 +1,7 @@
 apiVersion: tf.upbound.io/v1beta1
 kind: Workspace
 metadata:
-  name: cloudflow-vpc
+  name: mike-vpc
 spec:
   forProvider:
     source: Remote
@@ -10,6 +10,6 @@ spec:
     module: git::https://github.com/nethopper2/cluster-bootstrapping.git//vpc-module
   writeConnectionSecretToRef:
     namespace: default
-    name: tf-cloudflow-vpc
+    name: mike-vpc
   providerConfigRef:
-    name: aws-config-2
+    name: aws-config-mike

@@ -1,0 +1,11 @@
+apiVersion: tf.upbound.io/v1beta1
+kind: ProviderConfig
+metadata:
+  name: providerconfig-dan
+spec:
+  credentials:
+    - secretRef:
+        key: creds
+        name: aws-creds-dan
+        namespace: default
+      source: Secret

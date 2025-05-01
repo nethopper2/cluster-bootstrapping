@@ -4,9 +4,9 @@ metadata:
   name: awsconfig-mike
 spec:
   credentials:
-    filename: aws-creds-mike.ini
-  - secretRef:
-      key: creds
-      name: aws-creds
-      namespace: default
-    source: Secret
+    - filename: aws-creds-mike.ini
+    - secretRef:
+        key: creds
+        name: aws-creds
+        namespace: default
+      source: Secret

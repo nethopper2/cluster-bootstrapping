@@ -4,6 +4,7 @@ metadata:
   name: awsconfig-dan
 spec:
   credentials:
+    filename: aws-creds-dan.ini
     - secretRef:
         key: creds
         name: aws-creds-dan
